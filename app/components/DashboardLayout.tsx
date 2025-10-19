@@ -182,9 +182,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Main Content */}
-            <div className="lg:pl-64 flex flex-col h-screen lg:min-h-screen">
+            <div className="lg:pl-64 flex flex-col fixed inset-0 lg:static">
                 {/* Mobile Header */}
-                <div className="sticky top-0 z-30 lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex-shrink-0 z-30 lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                     <button
                         onClick={() => setSidebarOpen(true)}
                         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -198,10 +198,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">{children}</main>
+                <main className="flex-1 overflow-y-auto overscroll-none lg:pb-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    {children}
+                </main>
 
                 {/* Mobile Bottom Navigation */}
-                <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                <nav className="flex-shrink-0 z-50 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
                     <div className="grid grid-cols-2 h-16">
                         {navItems.map((item) => {
                             const Icon = item.icon;
