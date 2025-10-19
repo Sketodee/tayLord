@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { LayoutDashboard, Settings, LogOut, Menu, X, Moon, Sun } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTheme } from 'next-themes';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -11,30 +11,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const router = useRouter();
     const { data: session } = useSession();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [darkMode, setDarkMode] = useState(false);
     const { theme, setTheme } = useTheme();
 
-    // useEffect(() => {
-    //     // Check for saved theme preference or default to light mode
-    //     const savedTheme = localStorage.getItem('theme');
-    //     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    //     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-    //         setDarkMode(true);
-    //         document.documentElement.classList.add('dark');
-    //     }
-    // }, []);
-
     const toggleDarkMode = () => {
-        setTheme(theme === "dark" ? "light" : "dark")
-        // setDarkMode(!darkMode);
-        // if (!darkMode) {
-        //     document.documentElement.classList.add('dark');
-        //     localStorage.setItem('theme', 'dark');
-        // } else {
-        //     document.documentElement.classList.remove('dark');
-        //     localStorage.setItem('theme', 'light');
-        // }
+        setTheme(theme === "dark" ? "light" : "dark");
     };
 
     const navItems = [
@@ -66,10 +46,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     <button
                                         key={item.name}
                                         onClick={() => router.push(item.href)}
-                                        className={`w-full group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${isActive(item.href)
+                                        className={`w-full group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                                            isActive(item.href)
                                                 ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
                                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                            }`}
+                                        }`}
                                     >
                                         <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                                         {item.name}
@@ -87,7 +68,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 onClick={toggleDarkMode}
                                 className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                             >
-                                {darkMode ? (
+                                {theme === 'dark' ? (
                                     <Sun className="h-5 w-5 text-yellow-500" />
                                 ) : (
                                     <Moon className="h-5 w-5 text-gray-600" />
@@ -127,8 +108,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Mobile Sidebar */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 transform transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                    }`}
+                className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 transform transition-transform duration-300 ease-in-out lg:hidden ${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}
             >
                 <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between px-4 py-6 border-b border-gray-200 dark:border-gray-700">
@@ -151,10 +133,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         router.push(item.href);
                                         setSidebarOpen(false);
                                     }}
-                                    className={`w-full group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${isActive(item.href)
+                                    className={`w-full group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                                        isActive(item.href)
                                             ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
                                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                        }`}
+                                    }`}
                                 >
                                     <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                                     {item.name}
@@ -170,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 onClick={toggleDarkMode}
                                 className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                             >
-                                {darkMode ? (
+                                {theme === 'dark' ? (
                                     <Sun className="h-5 w-5 text-yellow-500" />
                                 ) : (
                                     <Moon className="h-5 w-5 text-gray-600" />
@@ -199,26 +182,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Main Content */}
-            <div className="lg:pl-64 flex flex-col min-h-screen">
+            <div className="lg:pl-64 flex flex-col h-screen lg:min-h-screen">
                 {/* Mobile Header */}
                 <div className="sticky top-0 z-30 lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="p-2 hidden  rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                         <Menu className="h-6 w-6 text-gray-600 dark:text-gray-400" />
                     </button>
-                    <h1 className="text-lg justify-center mx-auto font-semibold text-gray-900 dark:text-white">
+                    <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {navItems.find((item) => isActive(item.href))?.name || 'Dashboard'}
                     </h1>
                     <div className="w-10" /> {/* Spacer for centering */}
                 </div>
 
                 {/* Page Content */}
-                <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+                <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">{children}</main>
 
                 {/* Mobile Bottom Navigation */}
-                <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
                     <div className="grid grid-cols-2 h-16">
                         {navItems.map((item) => {
                             const Icon = item.icon;
@@ -226,10 +209,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 <button
                                     key={item.name}
                                     onClick={() => router.push(item.href)}
-                                    className={`flex flex-col items-center justify-center transition-colors ${isActive(item.href)
+                                    className={`flex flex-col items-center justify-center transition-colors ${
+                                        isActive(item.href)
                                             ? 'text-blue-600 dark:text-blue-400'
                                             : 'text-gray-600 dark:text-gray-400'
-                                        }`}
+                                    }`}
                                 >
                                     <Icon className="h-6 w-6 mb-1" />
                                     <span className="text-xs font-medium">{item.name}</span>

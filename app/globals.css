@@ -15,6 +15,12 @@
   --foreground: #ededed;
 }
 
+@supports (padding: max(0px)) {
+  .safe-bottom {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
 /* Optional: auto-detect system theme initially */
 @media (prefers-color-scheme: dark) {
   :root {
