@@ -47,6 +47,7 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,7 +58,7 @@ export async function PUT(
     const body = await req.json();
     const { title, description, items, deliveryDate, priority, status, notes, images, statusNote } = body;
 
-    const order = await Order.findById(params.id);
+    const order = await Order.findById(id);
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -110,6 +111,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -117,7 +119,7 @@ export async function DELETE(
 
     await dbConnect();
 
-    const order = await Order.findById(params.id);
+    const order = await Order.findById(id);
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -127,7 +129,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    await Order.findByIdAndDelete(params.id);
+    await Order.findByIdAndDelete(id);
 
     return NextResponse.json({ message: 'Order deleted successfully' });
   } catch (error: any) {
