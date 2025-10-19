@@ -15,6 +15,10 @@
   --foreground: #ededed;
 }
 
+html {
+  font-size: 75.5%; /* 14px if browser default is 16px */
+}
+
 @supports (padding: max(0px)) {
   .safe-bottom {
     padding-bottom: max(0px, env(safe-area-inset-bottom));
@@ -41,4 +45,5 @@ body {
   color: var(--foreground);
   font-family: "Space Grotesk", sans-serif !important;
   transition: background-color 0.3s, color 0.3s;
+  font-size: 1rem;
 }

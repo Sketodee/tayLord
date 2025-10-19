@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { User, Moon, Sun, Bell, Globe, Save, AlertCircle, CheckCircle, LogOut } from 'lucide-react';
+import { User, Moon, Sun, Bell, Globe, Save, AlertCircle, CheckCircle, LogOut, Building2 } from 'lucide-react';
 import DashboardLayout from '@/app/components/DashboardLayout';
 
 export default function SettingsPage() {
@@ -280,6 +280,35 @@ export default function SettingsPage() {
                     notifications ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Danger Zone - Logout */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <Building2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Business Profile
+              </h2>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Business Information</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Configure your business details, logo, and branding for invoices
+                </p>
+              </div>
+              <button
+                onClick={() => router.push('/settings/business')}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Setup Business
               </button>
             </div>
           </div>
