@@ -189,9 +189,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         onClick={() => setSidebarOpen(true)}
                         className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
-                        <Menu className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                        <Menu className="h-6 hidden w-6 text-gray-600 dark:text-gray-400" />
                     </button>
-                    <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h1 className="text-lg  font-semibold text-gray-900 dark:text-white">
                         {navItems.find((item) => isActive(item.href))?.name || 'Dashboard'}
                     </h1>
                     <div className="w-10" /> {/* Spacer for centering */}
