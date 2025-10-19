@@ -5,12 +5,13 @@ import BusinessProfile from '@/app/models/BusinessProfile';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     await dbConnect();
+    const { token } = await params;
 
-    const order = await Order.findOne({ trackingToken: params.token })
+    const order = await Order.findOne({ trackingToken: token })
       .populate('clientId', 'name')
       .select('-designerId');
 

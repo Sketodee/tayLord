@@ -6,11 +6,12 @@ import Order from '@/app/models/Order';
 import BusinessProfile from '@/app/models/BusinessProfile';
 
 export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
+ req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
     
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,7 +19,7 @@ export async function GET(
 
     await dbConnect();
 
-    const order = await Order.findById(params.id)
+    const order = await Order.findById(id)
       .populate('clientId', 'name email phone address')
       .populate('items.measurementId');
 
