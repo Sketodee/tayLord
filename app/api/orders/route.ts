@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
 
-    const order = await Order.create({
+    // Create new order instance and save (this triggers pre-save middleware)
+    const order = new Order({
       clientId,
       designerId: session.user.id,
       title,
@@ -89,6 +90,10 @@ export async function POST(req: NextRequest) {
         },
       ],
     });
+
+    console.log(order)
+
+    await order.save(); // This triggers the pre-save hook
 
     const populatedOrder = await Order.findById(order._id).populate('clientId', 'name email phone gender');
 
