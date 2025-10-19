@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Plus, Edit, Trash2, Ruler, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Ruler, Calendar } from 'lucide-react';
 import { Client, Measurement, clothingTypes, measurementFields } from '@/app/types';
+import DashboardLayout from '@/app/components/DashboardLayout';
 
 export default function ClientDetailPage() {
   const params = useParams();
@@ -31,7 +32,6 @@ export default function ClientDetailPage() {
   const fetchClient = async () => {
     try {
       const res = await fetch(`/api/clients/${params.id}`);
-      console.log(res)
       if (res.ok) {
         const data = await res.json();
         setClient(data.client);
@@ -85,10 +85,10 @@ export default function ClientDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Client not found</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Client not found</p>
           <button
             onClick={() => router.push('/dashboard')}
-            className="text-blue-600 hover:text-blue-700"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
           >
             Back to Dashboard
           </button>
@@ -98,70 +98,68 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to Dashboard</span>
+          </button>
+          
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-black" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>
-                <p className="text-sm text-gray-600">
-                  {client.gender.charAt(0).toUpperCase() + client.gender.slice(1)} •{' '}
-                  {client.email || client.phone || 'No contact info'}
-                </p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{client.name}</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                {client.gender.charAt(0).toUpperCase() + client.gender.slice(1)} •{' '}
+                {client.email || client.phone || 'No contact info'}
+              </p>
             </div>
             <button
               onClick={deleteClient}
-              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
             >
               <Trash2 className="w-5 h-5" />
-              <span className='hidden sm:block'>Delete Client</span>
+              <span className="hidden sm:inline">Delete Client</span>
             </button>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Client Info */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Client Information</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Client Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-600">Email</p>
-              <p className="text-gray-900">{client.email || 'Not provided'}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
+              <p className="text-gray-900 dark:text-white">{client.email || 'Not provided'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Phone</p>
-              <p className="text-gray-900">{client.phone || 'Not provided'}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
+              <p className="text-gray-900 dark:text-white">{client.phone || 'Not provided'}</p>
             </div>
             {client.notes && (
               <div className="md:col-span-2">
-                <p className="text-sm text-gray-600">Notes</p>
-                <p className="text-gray-900">{client.notes}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Notes</p>
+                <p className="text-gray-900 dark:text-white">{client.notes}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Measurements Section */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Measurements</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Measurements</h2>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Plus className="w-5 h-5" />
-                <span className='hidden sm:block'>Add Measurement</span>
+                <span className="hidden sm:inline">Add Measurement</span>
               </button>
             </div>
           </div>
@@ -169,22 +167,22 @@ export default function ClientDetailPage() {
           <div className="p-6">
             {measurements.length === 0 ? (
               <div className="text-center py-12">
-                <Ruler className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No measurements yet. Add the first one!</p>
+                <Ruler className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-400">No measurements yet. Add the first one!</p>
               </div>
             ) : (
               <div className="space-y-6">
                 {measurements.map((measurement) => (
-                  <div key={measurement._id} className="border border-gray-200 rounded-lg p-6">
+                  <div key={measurement._id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 capitalize">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize">
                           {measurement.clothingType}
                         </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
                           <Calendar className="w-4 h-4" />
                           <span>{new Date(measurement.createdAt).toLocaleDateString()}</span>
-                          <span className="text-gray-400">•</span>
+                          <span className="text-gray-400 dark:text-gray-600">•</span>
                           <span className="capitalize">{measurement.unit}</span>
                         </div>
                       </div>
@@ -196,9 +194,9 @@ export default function ClientDetailPage() {
                           (f) => f.key === key
                         );
                         return (
-                          <div key={key} className="bg-gray-50 rounded-lg p-3">
-                            <p className="text-sm text-gray-600">{field?.label || key}</p>
-                            <p className="text-lg font-semibold text-gray-900">
+                          <div key={key} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{field?.label || key}</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
                               {value} {measurement.unit}
                             </p>
                           </div>
@@ -207,9 +205,9 @@ export default function ClientDetailPage() {
                     </div>
 
                     {measurement.notes && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-sm text-gray-600">Notes</p>
-                        <p className="text-gray-900 mt-1">{measurement.notes}</p>
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Notes</p>
+                        <p className="text-gray-900 dark:text-white mt-1">{measurement.notes}</p>
                       </div>
                     )}
                   </div>
@@ -218,7 +216,7 @@ export default function ClientDetailPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Add Measurement Modal */}
       {showAddModal && (
@@ -231,7 +229,7 @@ export default function ClientDetailPage() {
           }}
         />
       )}
-    </div>
+    </DashboardLayout>
   );
 }
 
@@ -296,11 +294,11 @@ function AddMeasurementModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg max-w-2xl w-full p-6 my-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Add New Measurement</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6 my-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Add New Measurement</h2>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
             {error}
           </div>
         )}
@@ -308,7 +306,7 @@ function AddMeasurementModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Clothing Type *
               </label>
               <select
@@ -317,7 +315,7 @@ function AddMeasurementModal({
                   setClothingType(e.target.value);
                   setMeasurements({});
                 }}
-                className="w-full text-black px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
               >
                 <option value="">Select type</option>
@@ -330,11 +328,11 @@ function AddMeasurementModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Unit *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Unit *</label>
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value as 'inches' | 'cm')}
-                className="w-full text-black px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="inches">Inches</option>
                 <option value="cm">Centimeters</option>
@@ -344,11 +342,11 @@ function AddMeasurementModal({
 
           {fields.length > 0 && (
             <div>
-              <h3 className="font-medium text-gray-900 mb-3">Measurements</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white mb-3">Measurements</h3>
               <div className="grid grid-cols-2 gap-4">
                 {fields.map((field) => (
                   <div key={field.key}>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {field.label}
                     </label>
                     <input
@@ -356,7 +354,7 @@ function AddMeasurementModal({
                       step="0.1"
                       value={measurements[field.key] || ''}
                       onChange={(e) => handleMeasurementChange(field.key, e.target.value)}
-                      className="w-full text-black px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="0.0"
                     />
                   </div>
@@ -366,11 +364,11 @@ function AddMeasurementModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full text-black px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               rows={3}
               placeholder="Any additional notes..."
             />
@@ -380,7 +378,7 @@ function AddMeasurementModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1  px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>
@@ -389,7 +387,7 @@ function AddMeasurementModal({
               disabled={loading || !clothingType}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
             >
-              {loading ? 'Adding...' : 'Add'}
+              {loading ? 'Adding...' : 'Add Measurement'}
             </button>
           </div>
         </form>
