@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/app/components/DashboardLayout';
 import { Order, orderStatuses, priorityLevels } from '@/app/types/order';
+import InvoiceButton from '@/app/components/InvoiceButton';
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -126,7 +127,7 @@ export default function OrderDetailPage() {
   const shareTrackingLink = () => {
     const trackingUrl = `${window.location.origin}/track/${order?.trackingToken}`;
     const text = `Track your order ${order?.orderId}: ${trackingUrl}`;
-    
+
     if (navigator.share) {
       navigator.share({
         title: `Order ${order?.orderId}`,
@@ -148,7 +149,7 @@ export default function OrderDetailPage() {
     return priorityObj?.color || 'gray';
   };
 
-  const isOverdue = order && new Date(order.deliveryDate) < new Date() && 
+  const isOverdue = order && new Date(order.deliveryDate) < new Date() &&
     !['delivered', 'completed', 'cancelled'].includes(order.status);
 
   if (loading) {
@@ -197,6 +198,11 @@ export default function OrderDetailPage() {
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{order.orderId}</h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">{order.title}</p>
             </div>
+
+            <div className="flex gap-3">
+              <InvoiceButton orderId={order._id} orderNumber={order.orderId} />
+            </div>
+
             <div className="flex gap-2">
               <button
                 onClick={shareTrackingLink}
@@ -218,11 +224,10 @@ export default function OrderDetailPage() {
 
         {message && (
           <div
-            className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
-              message.type === 'success'
+            className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${message.type === 'success'
                 ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-400 border border-green-200 dark:border-green-800'
                 : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800'
-            }`}
+              }`}
           >
             {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             <span>{message.text}</span>

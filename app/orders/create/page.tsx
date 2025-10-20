@@ -3,11 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, Upload, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, X, AlertCircle, CheckCircle, DollarSign } from 'lucide-react';
 import DashboardLayout from '@/app/components/DashboardLayout';
 import { Client, clothingTypes, Measurement } from '@/app/types';
-
 import { OrderItem, priorityLevels } from '@/app/types/order';
+
+// Extended OrderItem with pricing
+interface OrderItemWithPrice extends OrderItem {
+  unitPrice: number;
+  totalPrice: number;
+}
 
 export default function CreateOrderPage() {
   const { data: session, status } = useSession();
@@ -22,13 +27,23 @@ export default function CreateOrderPage() {
   const [selectedClient, setSelectedClient] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [items, setItems] = useState<OrderItem[]>([
-    { clothingType: '', quantity: 1, fabric: '', color: '', notes: '' }
+  const [items, setItems] = useState<OrderItemWithPrice[]>([
+    { clothingType: '', quantity: 1, fabric: '', color: '', notes: '', unitPrice: 0, totalPrice: 0 }
   ]);
   const [deliveryDate, setDeliveryDate] = useState('');
   const [priority, setPriority] = useState('medium');
   const [notes, setNotes] = useState('');
   const [images, setImages] = useState<string[]>([]);
+  
+  // NEW: Pricing state
+  const [currency, setCurrency] = useState('NGN');
+  const [vatRate, setVatRate] = useState(7.5);
+  const [discount, setDiscount] = useState(0);
+
+  // Calculate pricing totals
+  const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+  const vatAmount = (subtotal * vatRate) / 100;
+  const totalAmount = subtotal + vatAmount - discount;
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -69,45 +84,71 @@ export default function CreateOrderPage() {
   };
 
   const addItem = () => {
-    setItems([...items, { clothingType: '', quantity: 1, fabric: '', color: '', notes: '' }]);
+    setItems([...items, { 
+      clothingType: '', 
+      quantity: 1, 
+      fabric: '', 
+      color: '', 
+      notes: '', 
+      unitPrice: 0, 
+      totalPrice: 0 
+    }]);
   };
 
   const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
+    if (items.length > 1) {
+      setItems(items.filter((_, i) => i !== index));
+    }
   };
 
-  const updateItem = (index: number, field: keyof OrderItem, value: any) => {
-    const updatedItems = [...items];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
-    setItems(updatedItems);
+  const updateItem = (index: number, field: keyof OrderItemWithPrice, value: any) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    
+    // Auto-calculate total price when quantity or unit price changes
+    if (field === 'quantity' || field === 'unitPrice') {
+      newItems[index].totalPrice = newItems[index].quantity * newItems[index].unitPrice;
+    }
+    
+    setItems(newItems);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
     setUploading(true);
+    const formData = new FormData();
+
+    // Append all files with the field name 'files'
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+
     try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        return data.url;
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
       });
 
-      const urls = await Promise.all(uploadPromises);
-      setImages([...images, ...urls]);
-      setMessage({ type: 'success', text: 'Images uploaded successfully!' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to upload images');
+      }
+
+      const data = await res.json();
+
+      // Handle response - API returns urls array for multiple files
+      const uploadedUrls = data.urls || [data.url];
+      setImages([...images, ...uploadedUrls]);
+      
+      setMessage({ 
+        type: 'success', 
+        text: `${uploadedUrls.length} image(s) uploaded successfully!` 
+      });
       setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to upload images' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to upload images' });
     } finally {
       setUploading(false);
     }
@@ -119,18 +160,21 @@ export default function CreateOrderPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
+
+    if (!selectedClient) {
+      setMessage({ type: 'error', text: 'Please select a client' });
+      return;
+    }
+
+    if (items.some(item => !item.clothingType)) {
+      setMessage({ type: 'error', text: 'Please select clothing type for all items' });
+      return;
+    }
+
     setLoading(true);
+    setMessage(null);
 
     try {
-      if (!selectedClient || !title || !deliveryDate || items.length === 0) {
-        throw new Error('Please fill in all required fields');
-      }
-
-      if (items.some(item => !item.clothingType)) {
-        throw new Error('Please select clothing type for all items');
-      }
-
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -138,20 +182,35 @@ export default function CreateOrderPage() {
           clientId: selectedClient,
           title,
           description,
-          items,
+          items: items.map(item => ({
+            clothingType: item.clothingType,
+            quantity: item.quantity,
+            measurementId: item.measurementId || null,
+            fabric: item.fabric,
+            color: item.color,
+            notes: item.notes,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+          })),
           deliveryDate,
           priority,
           notes,
           images,
+          currency,
+          subtotal,
+          vatRate,
+          vatAmount,
+          discount,
+          totalAmount,
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || 'Failed to create order');
       }
 
-      const data = await res.json();
       setMessage({ type: 'success', text: 'Order created successfully!' });
       setTimeout(() => {
         router.push(`/orders/${data.order._id}`);
@@ -188,7 +247,7 @@ export default function CreateOrderPage() {
 
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Create New Order</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Add a new order for your client
+            Add a new order for your client with pricing details
           </p>
         </div>
 
@@ -200,17 +259,13 @@ export default function CreateOrderPage() {
                 : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-800'
             }`}
           >
-            {message.type === 'success' ? (
-              <CheckCircle className="w-5 h-5" />
-            ) : (
-              <AlertCircle className="w-5 h-5" />
-            )}
+            {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             <span>{message.text}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
+          {/* Basic Information */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Basic Information</h2>
             
@@ -242,7 +297,7 @@ export default function CreateOrderPage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g., Wedding Suit - 3 Pieces"
+                  placeholder="e.g., Wedding Suit, Corporate Dress"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
@@ -296,14 +351,14 @@ export default function CreateOrderPage() {
             </div>
           </div>
 
-          {/* Order Items */}
+          {/* Order Items with Pricing */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Order Items</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Order Items & Pricing</h2>
               <button
                 type="button"
                 onClick={addItem}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add Item
@@ -312,21 +367,21 @@ export default function CreateOrderPage() {
 
             <div className="space-y-4">
               {items.map((item, index) => (
-                <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-gray-900 dark:text-white">Item {index + 1}</h3>
+                <div key={index} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Item {index + 1}</h3>
                     {items.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeItem(index)}
-                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Clothing Type *
@@ -338,9 +393,9 @@ export default function CreateOrderPage() {
                         required
                       >
                         <option value="">Select type</option>
-                        {availableClothingTypes.map((type) => (
+                        {availableClothingTypes.map((type:any) => (
                           <option key={type.value} value={type.value}>
-                            {type.label}
+                            {type.label.replace('_', ' ').toUpperCase()}
                           </option>
                         ))}
                       </select>
@@ -348,38 +403,23 @@ export default function CreateOrderPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Quantity
+                        Measurements
                       </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
+                      <select
+                        value={item.measurementId || ''}
+                        onChange={(e) => updateItem(index, 'measurementId', e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      />
+                      >
+                        <option value="">No measurements</option>
+                        {measurements
+                          .filter(m => m.clothingType === item.clothingType)
+                          .map((measurement) => (
+                            <option key={measurement._id} value={measurement._id}>
+                              {measurement.clothingType} - {new Date(measurement.createdAt).toLocaleDateString()}
+                            </option>
+                          ))}
+                      </select>
                     </div>
-
-                    {item.clothingType && measurements.length > 0 && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Measurement (Optional)
-                        </label>
-                        <select
-                          value={item.measurementId || ''}
-                          onChange={(e) => updateItem(index, 'measurementId', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        >
-                          <option value="">Select measurement</option>
-                          {measurements
-                            .filter((m) => m.clothingType === item.clothingType)
-                            .map((measurement) => (
-                              <option key={measurement._id} value={measurement._id}>
-                                {new Date(measurement.createdAt).toLocaleDateString()} - {measurement.unit}
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -389,7 +429,7 @@ export default function CreateOrderPage() {
                         type="text"
                         value={item.fabric}
                         onChange={(e) => updateItem(index, 'fabric', e.target.value)}
-                        placeholder="e.g., Wool, Cotton"
+                        placeholder="e.g., Cotton, Linen, Silk"
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       />
                     </div>
@@ -402,26 +442,149 @@ export default function CreateOrderPage() {
                         type="text"
                         value={item.color}
                         onChange={(e) => updateItem(index, 'color', e.target.value)}
-                        placeholder="e.g., Navy Blue"
+                        placeholder="e.g., Navy Blue, White"
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       />
                     </div>
 
-                    <div className="col-span-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Unit Price ({currency})
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.unitPrice}
+                        onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Item Notes
                       </label>
-                      <input
-                        type="text"
+                      <textarea
                         value={item.notes}
                         onChange={(e) => updateItem(index, 'notes', e.target.value)}
-                        placeholder="Any special instructions for this item..."
+                        placeholder="Special instructions for this item..."
+                        rows={2}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       />
+                    </div>
+
+                    <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700 dark:text-gray-300">Item Total:</span>
+                        <span className="font-semibold text-blue-600 dark:text-blue-400">
+                          {currency} {(item.quantity * item.unitPrice).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Pricing Summary */}
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2 mb-4">
+                <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pricing Summary</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Currency
+                    </label>
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="NGN">NGN - Nigerian Naira</option>
+                      <option value="USD">USD - US Dollar</option>
+                      <option value="GBP">GBP - British Pound</option>
+                      <option value="EUR">EUR - Euro</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      VAT Rate (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={vatRate}
+                      onChange={(e) => setVatRate(parseFloat(e.target.value) || 0)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Discount ({currency})
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={discount}
+                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2 pt-3 border-t border-gray-300 dark:border-gray-600">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {currency} {subtotal.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">VAT ({vatRate}%):</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {currency} {vatAmount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                      <span>Discount:</span>
+                      <span className="font-medium">
+                        -{currency} {discount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-300 dark:border-gray-600">
+                    <span className="text-gray-900 dark:text-white">Total Amount:</span>
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {currency} {totalAmount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -431,9 +594,11 @@ export default function CreateOrderPage() {
             
             <div className="space-y-4">
               <div>
-                <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
-                  <div className="text-center">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <label 
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="flex flex-col items-center justify-center">
+                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       {uploading ? 'Uploading...' : 'Click to upload images'}
                     </p>

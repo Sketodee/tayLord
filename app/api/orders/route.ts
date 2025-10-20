@@ -56,7 +56,23 @@ export async function POST(req: NextRequest) {
     await dbConnect();
 
     const body = await req.json();
-    const { clientId, title, description, items, deliveryDate, priority, notes, images } = body;
+    const {
+      clientId,
+      title,
+      description,
+      items, // Now includes unitPrice and totalPrice
+      deliveryDate,
+      priority,
+      notes,
+      images,
+      // NEW: Pricing fields
+      currency,
+      subtotal,
+      vatRate,
+      vatAmount,
+      discount,
+      totalAmount,
+    } = body;
 
     if (!clientId || !title || !deliveryDate || !items || items.length === 0) {
       return NextResponse.json(
@@ -71,17 +87,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
 
-    // Create new order instance and save (this triggers pre-save middleware)
+    // Create new order instance with all fields including pricing
     const order = new Order({
       clientId,
       designerId: session.user.id,
       title,
       description,
-      items,
+      items, // Items now include unitPrice and totalPrice
       deliveryDate,
       priority: priority || 'medium',
       notes,
       images: images || [],
+      // NEW: Add pricing fields
+      currency: currency || 'NGN',
+      subtotal: subtotal || 0,
+      vatRate: vatRate !== undefined ? vatRate : 7.5,
+      vatAmount: vatAmount || 0,
+      discount: discount || 0,
+      totalAmount: totalAmount || 0,
+      paymentStatus: 'unpaid', // Default payment status
+      amountPaid: 0, // Default amount paid
       statusHistory: [
         {
           status: 'pending',
@@ -91,15 +116,32 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    console.log(order)
+    console.log('Creating order with pricing:', {
+      orderId: order.orderId,
+      currency: order.currency,
+      subtotal: order.subtotal,
+      vatRate: order.vatRate,
+      vatAmount: order.vatAmount,
+      discount: order.discount,
+      totalAmount: order.totalAmount,
+    });
 
-    await order.save(); // This triggers the pre-save hook
+    // Save order - this triggers the pre-save hook which recalculates totals
+    await order.save();
 
-    const populatedOrder = await Order.findById(order._id).populate('clientId', 'name email phone gender');
+    // Populate client details for response
+    const populatedOrder = await Order.findById(order._id)
+      .populate('clientId', 'name email phone gender');
 
-    return NextResponse.json({ order: populatedOrder }, { status: 201 });
+    return NextResponse.json({ 
+      order: populatedOrder,
+      message: 'Order created successfully with pricing details'
+    }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating order:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message,
+      details: error.stack 
+    }, { status: 500 });
   }
 }
