@@ -216,7 +216,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="lg:pl-64 flex flex-col min-h-screen">
         {/* Mobile Header */}
-        <div className="sticky top-0 z-30 lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        {/* <div className="sticky top-0 z-30 lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 hidden rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -227,7 +227,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {getPageTitle()}
           </h1>
           <div className="w-10" />
-        </div>
+        </div> */}
 
         {/* Page Content */}
         <main 

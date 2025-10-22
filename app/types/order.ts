@@ -73,7 +73,7 @@ export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 
 // Keep the original export name for backward compatibility
 export const orderStatuses: { value: OrderStatus; label: string; color: string }[] = [
-  { value: 'pending', label: 'Pending', color: 'gray' },
+  { value: 'pending', label: 'Pending', color: 'black' },
   { value: 'measurements_taken', label: 'Measurements Taken', color: 'blue' },
   { value: 'fabric_sourced', label: 'Fabric Sourced', color: 'indigo' },
   { value: 'cutting', label: 'Cutting', color: 'purple' },
