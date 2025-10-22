@@ -17,7 +17,8 @@ import {
   Image as ImageIcon,
   Clock,
   Copy,
-  Receipt
+  Receipt,
+  MoreVertical
 } from 'lucide-react';
 import DashboardLayout from '@/app/components/DashboardLayout';
 import { Order, orderStatuses, priorityLevels } from '@/app/types/order';
@@ -34,6 +35,7 @@ export default function OrderDetailPage() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -193,33 +195,91 @@ export default function OrderDetailPage() {
             <span>Back to Orders</span>
           </button>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{order.orderId}</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{order.title}</p>
-            </div>
+        
+          <div>
+    {/* Title & Menu */}
+    <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex-1 min-w-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">
+          {order.orderId}
+        </h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+          {order.title}
+        </p>
+      </div>
 
-            <div className="flex gap-3">
-              <InvoiceButton orderId={order._id} orderNumber={order.orderId} />
-            </div>
+      {/* Mobile Menu Button */}
+      <div className="sm:hidden relative">
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <MoreVertical className="w-5 h-5" />
+        </button>
 
-            <div className="flex gap-2">
+        {showMenu && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 py-2">
               <button
-                onClick={shareTrackingLink}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={() => {
+                  window.open(`/api/orders/${order._id}/invoice`, '_blank');
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                <Share2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Share Tracking</span>
+                <FileText className="w-4 h-4 text-green-600" />
+                <span className="text-sm">Invoice</span>
               </button>
               <button
-                onClick={handleDeleteOrder}
-                className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                onClick={() => {
+                  shareTrackingLink();
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Delete</span>
+                <Share2 className="w-4 h-4 text-blue-600" />
+                <span className="text-sm">Share</span>
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+              <button
+                onClick={() => {
+                  handleDeleteOrder();
+                  setShowMenu(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <Trash2 className="w-4 h-4 text-red-600" />
+                <span className="text-sm text-red-600">Delete</span>
               </button>
             </div>
-          </div>
+          </>
+        )}
+      </div>
+    </div>
+
+    {/* Desktop Buttons */}
+    <div className="hidden sm:flex gap-3">
+      <InvoiceButton orderId={order._id} orderNumber={order.orderId} />
+      <button
+        onClick={shareTrackingLink}
+        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+      >
+        <Share2 className="w-4 h-4" />
+        <span>Share</span>
+      </button>
+      <button
+        onClick={handleDeleteOrder}
+        className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg border border-red-600 dark:border-red-400"
+      >
+        <Trash2 className="w-4 h-4" />
+        <span>Delete</span>
+      </button>
+    </div>
+  </div>
+
+
+
         </div>
 
         {message && (
